@@ -40,6 +40,7 @@ class ImageAgent(Agent):
         ]
 
     def forward(self, t: int, **kwargs):
+        print('FORWARD OF IMAGEAGENT AT TIME ', t)
         features = []
 
         for env_index in range(self.env_agent.num_envs):
@@ -167,6 +168,7 @@ class DiscreteQAgent(Agent):
         )
 
     def forward(self, t: int, choose_action=True, **kwargs):
+        print('ENTERING DISCRETEQAGENT AT TIME ', t)
         current_features = self.get(("env/features", t))
         # print('features', current_features)
         # print(current_features.shape)
@@ -187,6 +189,7 @@ class EGreedyActionSelector(Agent):
         self.epsilon = epsilon
 
     def forward(self, t: int, **kwargs):
+        print('ENTERING EXPLORER')
         q_values = self.get(("q_values", t))
         size, nb_actions = q_values.size()
 
@@ -198,6 +201,7 @@ class EGreedyActionSelector(Agent):
 
         self.set(("action", t), action.long())
         self.epsilon = max(0.001, self.epsilon * 0.995)
+        print(self.get(('action', t)))
 
 
 class Logger:
@@ -313,21 +317,25 @@ def run_best_dqn(cfg, compute_critic_loss):
     best_agent = eval_agent.agent.agents[1]
 
     # 7) Training loop
+    print('Entering training...')
     pbar = tqdm(range(cfg.algorithm.max_epochs))
     for epoch in pbar:
-        print(epoch)
+        print('eepoch', epoch)
         # Execute the agent in the workspace
         if epoch > 0:
+            print('epoch > 0')
             train_workspace.zero_grad()
             train_workspace.copy_n_last_steps(1)
             train_agent(
                 train_workspace, t=1, n_steps=cfg.algorithm.n_steps, stochastic=True
             )
         else:
+            print('executing train agent')
             train_agent(
                 train_workspace, t=0, n_steps=cfg.algorithm.n_steps, stochastic=True
             )
-
+            print('executed train agent at time 0')
+        
         # Get the transitions
 
         transition_workspace = train_workspace.get_transitions()
@@ -403,6 +411,8 @@ def run_best_dqn(cfg, compute_critic_loss):
 
     return best_agent
 
+''' Probleme avec le nombre de steps qui ne s'arrete pas automatiquement?
+'''
 
 # %%
 @hydra.main(
